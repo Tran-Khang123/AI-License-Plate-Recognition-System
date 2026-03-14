@@ -22,17 +22,17 @@ This project detects vehicles from video streams, recognizes license plates, and
 # 🧠 AI Pipeline
 
 Video Input  
-↓  
+    ↓  
 YOLOv11 Plate Detection  
-↓  
+    ↓  
 Plate Cropping  
-↓  
+    ↓  
 Character Detection  
-↓  
+    ↓  
 OCR Voting Algorithm  
-↓  
+    ↓  
 License Plate Output  
-↓  
+    ↓  
 Automatic Payment Deduction
 
 ---
@@ -94,6 +94,8 @@ AI-License-Plate-Recognition-System/
 ├── main.py                      # FastAPI application entrypoint
 │
 └── .gitignore
+
+---
 
 # 📡 API Endpoints
 
