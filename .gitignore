@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.env
+
+# Models (too large)
+*.pt
+
+# Output data
+output/
+
+# Videos
+*.mp4
+*.mov
+*.avi
+
+# OS
+.DS_Store
+Thumbs.db

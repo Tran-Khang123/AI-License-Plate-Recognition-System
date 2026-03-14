@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hệ Thống Nhận Diện Biển Số</title>
+<style>
+  :root{
+    --accent1: #667eea;
+    --accent2: #764ba2;
+    --card: #f8f9fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg,var(--accent1) 0%, var(--accent2) 100%);
+    min-height:100vh;
+    padding:20px;
+  }
+  .shell{
+    width:100%;
+    max-width:1400px;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.12);
+    overflow:hidden;
+    margin:0 auto;
+  }
+  header{
+    background:linear-gradient(135deg,#4facfe 0%, #00f2fe 100%);
+    padding:24px 32px;
+    color:#fff;
+  }
+  header h1{font-size:1.75rem; margin-bottom:8px}
+  header p{opacity:0.95; font-size:0.95rem;}
+  .layout{display:grid;grid-template-columns:1fr;gap:20px;padding:24px}
+  .card{background:var(--card);border-radius:12px;padding:16px}
+  .big-btn{
+    padding:12px 20px;
+    border-radius:10px;
+    border:none;
+    font-weight:700;
+    cursor:pointer;
+    font-size:0.95rem;
+    transition:all 0.2s;
+  }
+  .big-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.15)}
+  .btn-photo{background:linear-gradient(135deg,#34c3ff 0%,#4facfe 100%);color:#fff}
+  .btn-video{background:linear-gradient(135deg,#ff9966 0%,#ff5e62 100%);color:#fff}
+  .btn-back{background:#e8e8e8;color:#222}
+  label{display:block;font-weight:600;margin-bottom:8px;font-size:0.9rem}
+  input[type="text"],input[type="number"],select,input[type="file"]{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:2px solid #e7eaf6;
+    background:#fff;
+    margin-bottom:10px;
+    font-size:0.95rem;
+  }
+  .row{display:flex;gap:12px;margin-bottom:10px}
+  .row .col{flex:1}
+  h2{font-size:1.3rem;margin-bottom:12px;color:#222}
+  .small{font-size:0.85rem;color:#666}
+  
+  /* Photo Section */
+  .results-list{max-height:600px;overflow-y:auto;margin-top:12px}
+  .detection-item{
+    display:flex;
+    gap:12px;
+    padding:12px;
+    background:#fff;
+    border-radius:10px;
+    margin-bottom:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    transition:transform 0.2s;
+    cursor:pointer;
+  }
+  .detection-item:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.12)}
+  .det-image{width:200px;border-radius:8px;object-fit:contain;border:1px solid #eee;flex-shrink:0}
+  .det-info{flex:1}
+  .det-plate{font-size:1.3rem;font-weight:700;color:#222;margin-bottom:6px}
+  .det-time{font-size:0.85rem;color:#888;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+  .det-status{
+    padding:8px 12px;
+    border-radius:8px;
+    font-size:0.85rem;
+    font-weight:600;
+    margin-top:6px;
+  }
+  .status-ok{background:#d4edda;color:#155724}
+  .status-fail{background:#f8d7da;color:#721c24}
+  
+  /* Video Section */
+  .video-container{display:flex;gap:20px;margin-top:12px}
+  .video-left{flex:1;min-width:0}
+  .video-right{width:340px}
+  #video-img{width:100%;border-radius:10px;background:#000}
+  #overlay-ui{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:auto}
+  #video-area{position:relative;width:100%;aspect-ratio:16/9}
+  .roi-handle{
+    width:12px;height:12px;background:#fff;border:2px solid #2176ff;
+    border-radius:50%;position:absolute;z-index:50;cursor:pointer;
+  }
+  .roi-box{
+    position:absolute;
+    border:3px solid #2176ff;
+    border-radius:6px;
+    cursor:move;
+    background:rgba(33,118,255,0.05);
+    box-sizing:border-box;
+  }
+  
+  .video-results{
+    max-height:500px;
+    overflow-y:auto;
+    background:#f0f0f0;
+    border-radius:8px;
+    padding:8px;
+  }
+  
+  .video-det-item{
+    background:#fff;
+    padding:10px;
+    border-radius:6px;
+    margin-bottom:8px;
+    border-left:4px solid #4facfe;
+    font-size:0.9rem;
+  }
+  .video-det-plate{font-weight:700;color:#222;margin-bottom:4px}
+  .video-det-time{font-size:0.8rem;color:#888}
+  .video-det-track{font-size:0.8rem;color:#666;margin-top:4px}
+  .video-det-status{font-size:0.8rem;margin-top:4px;font-weight:600}
+  
+  /* Table */
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #ddd;padding:10px;text-align:left}
+  th{background:#f2f2f2;font-weight:bold}
+  tr:nth-child(even){background-color:#f9f9f9}
+  .del-btn{background:#ff6b6b;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer}
+  .del-btn:hover{background:#ff5252}
+  
+  /* Modal */
+  .modal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.85);align-items:center;justify-content:center}
+  .modal.show{display:flex}
+  .modal-content{background:#fff;border-radius:16px;padding:20px;max-width:90%;max-height:90%;overflow:auto;position:relative}
+  .modal-close{position:absolute;top:10px;right:10px;background:#ff6b6b;color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer}
+  .modal-image{max-width:100%;max-height:60vh;border-radius:12px;margin-bottom:16px}
+  .modal-title{font-size:1.5rem;font-weight:700;margin-bottom:10px}
+  .modal-info{background:#f8f9fa;padding:12px;border-radius:8px;margin-top:10px}
+  
+  @media (max-width:900px){
+    .video-container{flex-direction:column}
+    .video-right{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>🚗 Nhận Diện Biển Số</h1>
+    <p>Quản lý đăng ký xe · Xử lý ảnh · Xử lý video real-time</p>
+  </header>
+  
+  <div class="layout">
+    <!-- HOME PANEL -->
+    <div id="homePanel">
+      <div class="card">
+        <h2>📝 Quản Lý Đăng Ký Xe</h2>
+        <p class="small">Đăng ký biển số và nạp tiền. Chi phí mỗi lần: <strong>20.000 VNĐ</strong></p>
+        
+        <div style="margin-top:12px">
+          <label>Biển số</label>
+          <input type="text" id="licensePlateInput" placeholder="Ví dụ: 41A-63723">
+          <label>Số tiền (VNĐ)</label>
+          <input type="number" id="amountInput" value="1000000">
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="big-btn btn-photo" onclick="registerCar()">Đăng ký / Nạp</button>
+            <button class="big-btn btn-photo" onclick="gotoPhotoPanel()">📸 Ảnh</button>
+            <button class="big-btn btn-video" onclick="gotoVideoPanel()">🎥 Video</button>
+          </div>
+          <div id="homeMsg" style="margin-top:10px"></div>
+        </div>
+
+        <h3 style="margin-top:16px">Danh sách xe</h3>
+        <table id="carsTable">
+          <thead>
+            <tr><th>Biển số</th><th>Tiền (VNĐ)</th><th>Ngày</th><th>Hành động</th></tr>
+          </thead>
+          <tbody id="carsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PHOTO PANEL -->
+    <div id="photoPanel" style="display:none">
+      <div class="card">
+        <h2>📸 Xử Lý Ảnh</h2>
+        <p class="small">Upload ảnh để detect biển số</p>
+        
+        <input type="file" id="photoFile" accept="image/*">
+        <div id="imagePreviewContainer" style="margin-top:10px;display:none">
+          <img id="imagePreview" src="" style="max-width:300px;border-radius:8px;">
+        </div>
+        
+        <label style="margin-top:10px">Ngưỡng confidence</label>
+        <input type="number" id="confidenceThreshold" min="0" max="1" step="0.01" value="0.5">
+        
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="big-btn btn-photo" id="btnProcessPhoto">🚀 Xử lý</button>
+          <button class="big-btn btn-back" onclick="gotoHomePanel()">Trở về</button>
+        </div>
+        
+        <div id="photoLoading" style="display:none;margin-top:10px;color:#666">⏳ Đang xử lý...</div>
+        <div id="photoResults" class="results-list"></div>
+      </div>
+    </div>
+
+    <!-- VIDEO PANEL -->
+    <div id="videoPanel" style="display:none">
+      <div class="card">
+        <h2>🎥 Xử Lý Video</h2>
+        
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <input type="file" id="videoFileInput" accept="video/*" style="flex:1;min-width:200px">
+          <button class="big-btn btn-photo" onclick="uploadVideo()">⬆️ Upload</button>
+          <button class="big-btn btn-photo" onclick="useDefaultVideo()">📹 Mẫu</button>
+          <button class="big-btn btn-back" onclick="gotoHomePanel()">Trở về</button>
+        </div>
+        
+        <div class="video-container">
+          <div class="video-left">
+            <div id="video-area">
+              <img id="video-img" src="/video" crossorigin="anonymous"/>
+              <div id="overlay-ui"></div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:10px">
+              <button class="big-btn btn-video" id="btn-start">▶️ Bắt đầu</button>
+              <div style="padding:12px;background:#f0f0f0;border-radius:8px;flex:1">
+                <span class="small">ROI: </span><span id="roi-text" style="font-weight:700">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="video-right">
+            <div style="font-weight:700;margin-bottom:8px">Phát hiện gần đây:</div>
+            <div class="video-results" id="videoResults"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="imageModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <img id="modalImage" src="" class="modal-image">
+    <div class="modal-title" id="modalPlateText">-</div>
+    <div class="modal-info">
+      <div><strong>🕐 Thời gian:</strong> <span id="modalTimestamp">-</span></div>
+      <div style="margin-top:6px"><strong>💰 Thanh toán:</strong> <span id="modalPayment">-</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === UI NAVIGATION ===
+function gotoHomePanel(){document.getElementById('homePanel').style.display='block';document.getElementById('photoPanel').style.display='none';document.getElementById('videoPanel').style.display='none'}
+function gotoPhotoPanel(){document.getElementById('homePanel').style.display='none';document.getElementById('photoPanel').style.display='block';document.getElementById('videoPanel').style.display='none'}
+function gotoVideoPanel(){document.getElementById('homePanel').style.display='none';document.getElementById('photoPanel').style.display='none';document.getElementById('videoPanel').style.display='block'}
+
+// === CARS MANAGEMENT ===
+let registeredCars = [];
+const homeMsg = document.getElementById('homeMsg');
+const carsTableBody = document.getElementById('carsTableBody');
+
+function renderCarList(){
+  carsTableBody.innerHTML='';
+  registeredCars.forEach(car=>{
+    const row=document.createElement('tr');
+    row.innerHTML=`<td><strong>${car.licensePlate}</strong></td><td>${(car.amount||0).toLocaleString('vi-VN')}</td><td>${car.date||''}</td><td><button class="del-btn" onclick="deleteCar('${car.licensePlate}')">Xóa</button></td>`;
+    carsTableBody.appendChild(row);
+  });
+}
+
+async function loadRegisteredCars(){
+  try{
+    const r=await fetch('/get_registered_cars');
+    const j=await r.json();
+    registeredCars=j.cars||[];
+    renderCarList();
+  }catch(e){registeredCars=[];renderCarList()}
+}
+
+async function registerCar(){
+  const plate=document.getElementById('licensePlateInput').value.trim();
+  const amount=parseInt(document.getElementById('amountInput').value)||0;
+  if(!plate){homeMsg.innerHTML='<span style="color:#c00">Nhập biển số</span>';return}
+  try{
+    const resp=await fetch('/register_car',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({licensePlate:plate,amount:amount})});
+    const j=await resp.json();
+    if(j.success){
+      homeMsg.innerHTML='<span style="color:green">✓ Đăng ký thành công</span>';
+      registeredCars=j.updated_cars||registeredCars;
+      renderCarList();
+      document.getElementById('licensePlateInput').value='';
+      document.getElementById('amountInput').value='1000000';
+    }else homeMsg.innerHTML='<span style="color:#c00">Lỗi đăng ký</span>';
+  }catch(e){homeMsg.innerHTML='<span style="color:#c00">Lỗi kết nối</span>'}
+}
+
+async function deleteCar(plate){
+  if(!confirm('Xóa xe '+plate+'?'))return;
+  try{
+    const resp=await fetch('/delete_car',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({licensePlate:plate})});
+    const j=await resp.json();
+    if(j.success){
+      registeredCars=registeredCars.filter(c=>c.licensePlate!==plate);
+      renderCarList();
+      homeMsg.innerHTML='<span style="color:green">✓ Xóa thành công</span>';
+      setTimeout(()=>{homeMsg.innerHTML=''},3000);
+    }
+  }catch(e){homeMsg.innerHTML='<span style="color:#c00">Lỗi xóa</span>'}
+}
+
+window.addEventListener('load',()=>loadRegisteredCars());
+
+// === PHOTO HANDLING ===
+const photoFile=document.getElementById('photoFile');
+const imagePreview=document.getElementById('imagePreview');
+const btnProcessPhoto=document.getElementById('btnProcessPhoto');
+const photoLoading=document.getElementById('photoLoading');
+const photoResults=document.getElementById('photoResults');
+
+photoFile.addEventListener('change',(e)=>{
+  const file=e.target.files[0];
+  if(file&&file.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=r=>{
+      imagePreview.src=r.target.result;
+      document.getElementById('imagePreviewContainer').style.display='block';
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+btnProcessPhoto.addEventListener('click',async()=>{
+  if(!photoFile.files.length){alert('Chọn ảnh');return}
+  const file=photoFile.files[0];
+  const conf=parseFloat(document.getElementById('confidenceThreshold').value)||0.5;
+  const fd=new FormData();
+  fd.append('image',file);
+  fd.append('confidence_threshold',conf);
+  photoLoading.style.display='block';
+  photoResults.innerHTML='';
+  try{
+    const r=await fetch('/process_image',{method:'POST',body:fd});
+    const j=await r.json();
+    photoLoading.style.display='none';
+    if(j.error){photoResults.innerHTML='<div style="color:#c00">'+j.error+'</div>';return}
+    for(const p of j.detected_plates){
+      const div=document.createElement('div');
+      div.className='detection-item';
+      div.onclick=()=>openModal({text:p.license_plate,crop_b64:p.result_image,timestamp:p.timestamp,payment:p.payment});
+      const img=document.createElement('img');
+      img.className='det-image';
+      img.src='data:image/jpeg;base64,'+p.result_image;
+      const info=document.createElement('div');
+      info.className='det-info';
+      const plate=document.createElement('div');
+      plate.className='det-plate';
+      plate.textContent=p.license_plate;
+      info.appendChild(plate);
+      const time=document.createElement('div');
+      time.className='det-time';
+      time.innerHTML='🕐 '+p.timestamp;
+      info.appendChild(time);
+      const pay=p.payment||{};
+      const status=document.createElement('div');
+      status.className='det-status';
+      if(pay.status==='charged'){
+        status.className+=' status-ok';
+        status.innerHTML='✓ Đã trừ '+( pay.deducted?.toLocaleString?.() || 20000)+' VNĐ';
+      }else if(pay.status==='no_balance'){
+        status.className+=' status-fail';
+        status.innerHTML='⚠ Hết tiền';
+      }else if(pay.status==='unregistered'){
+        status.className+=' status-fail';
+        status.innerHTML='⚠ Chưa đăng ký';
+      }
+      info.appendChild(status);
+      div.appendChild(img);
+      div.appendChild(info);
+      photoResults.appendChild(div);
+    }
+    await loadRegisteredCars();
+  }catch(e){photoLoading.style.display='none';alert('Lỗi: '+e.message)}
+});
+
+// === MODAL ===
+const imageModal=document.getElementById('imageModal');
+function openModal(data){
+  document.getElementById('modalImage').src='data:image/jpeg;base64,'+data.crop_b64;
+  document.getElementById('modalPlateText').textContent=data.text||'-';
+  document.getElementById('modalTimestamp').textContent=data.timestamp||'-';
+  const pay=data.payment||{};
+  let payText='';
+  if(pay.status==='charged')payText='✓ Đã trừ '+( pay.deducted?.toLocaleString?.() || 20000)+' VNĐ - Số dư: '+(pay.remaining?.toLocaleString?.() || 0)+' VNĐ';
+  else if(pay.status==='no_balance')payText='⚠ Hết tiền';
+  else if(pay.status==='unregistered')payText='⚠ Chưa đăng ký';
+  else payText=JSON.stringify(pay);
+  document.getElementById('modalPayment').innerHTML=payText;
+  imageModal.classList.add('show');
+}
+function closeModal(){imageModal.classList.remove('show')}
+imageModal.addEventListener('click',e=>{if(e.target===imageModal)closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+// === VIDEO HANDLING ===
+let FRAME_W=1280,FRAME_H=720;
+async function initFrameInfo(){try{const r=await fetch('/frame_info');const j=await r.json();FRAME_W=j.frame_w||FRAME_W;FRAME_H=j.frame_h||FRAME_H}catch(e){}}
+initFrameInfo();
+
+async function uploadVideo(){
+  if(!document.getElementById('videoFileInput').files.length){alert('Chọn video');return}
+  const f=document.getElementById('videoFileInput').files[0];
+  const fd=new FormData();
+  fd.append('file',f);
+  try{
+    const r=await fetch('/upload_video',{method:'POST',body:fd});
+    const j=await r.json();
+    if(j.success){
+      alert('Upload xong. Nhấn Bắt đầu');
+      document.getElementById('video-img').src='/video?'+Date.now();
+      await initFrameInfo();
+    }else alert('Lỗi upload');
+  }catch(e){alert('Lỗi: '+e.message)}
+}
+
+function useDefaultVideo(){
+  document.getElementById('video-img').src='/video?'+Date.now();
+  alert('Dùng video mẫu. Nhấn Bắt đầu');
+}
+
+// ROI UI
+const overlayUI=document.getElementById('overlay-ui');
+const roi=document.createElement('div');
+roi.className='roi-box';
+roi.style.left='40px';roi.style.top='30px';roi.style.width='300px';roi.style.height='120px';
+overlayUI.appendChild(roi);
+
+const handles={};
+['nw','ne','sw','se'].forEach(pos=>{
+  const h=document.createElement('div');
+  h.className='roi-handle';
+  h.dataset.pos=pos;
+  overlayUI.appendChild(h);
+  handles[pos]=h;
+});
+
+function positionHandles(){
+  const r=roi.getBoundingClientRect();
+  const p=overlayUI.getBoundingClientRect();
+  const left=r.left-p.left,top=r.top-p.top,w=r.width,h=r.height;
+  handles.nw.style.left=(left-6)+'px';handles.nw.style.top=(top-6)+'px';
+  handles.ne.style.left=(left+w-6)+'px';handles.ne.style.top=(top-6)+'px';
+  handles.sw.style.left=(left-6)+'px';handles.sw.style.top=(top+h-6)+'px';
+  handles.se.style.left=(left+w-6)+'px';handles.se.style.top=(top+h-6)+'px';
+}
+positionHandles();
+
+let dragState=null;
+overlayUI.addEventListener('pointerdown',ev=>{
+  ev.preventDefault();
+  const t=ev.target;
+  const p=overlayUI.getBoundingClientRect();
+  const sx=ev.clientX-p.left,sy=ev.clientY-p.top;
+  if(t===roi){
+    dragState={type:'move',sx,sy,origLeft:parseFloat(roi.style.left),origTop:parseFloat(roi.style.top)}
+  }else if(t.classList&&t.classList.contains('roi-handle')){
+    dragState={type:'resize',handle:t.dataset.pos,sx,sy,l:parseFloat(roi.style.left),t:parseFloat(roi.style.top),w:parseFloat(roi.style.width),h:parseFloat(roi.style.height)}
+  }
+  overlayUI.setPointerCapture(ev.pointerId);
+});
+
+overlayUI.addEventListener('pointermove',ev=>{
+  if(!dragState)return;
+  const p=overlayUI.getBoundingClientRect();
+  const cx=ev.clientX-p.left,cy=ev.clientY-p.top;
+  if(dragState.type==='move'){
+    let nx=dragState.origLeft+(cx-dragState.sx),ny=dragState.origTop+(cy-dragState.sy);
+    nx=Math.max(0,Math.min(nx,overlayUI.offsetWidth-roi.offsetWidth));
+    ny=Math.max(0,Math.min(ny,overlayUI.offsetHeight-roi.offsetHeight));
+    roi.style.left=nx+'px';roi.style.top=ny+'px';
+  }else{
+    const h=dragState.handle;
+    let l=dragState.l,t=dragState.t,w=dragState.w,hh=dragState.h;
+    if(h==='se'){
+      w=Math.max(20,dragState.w+(cx-dragState.sx));
+      hh=Math.max(10,dragState.h+(cy-dragState.sy));
+    }else if(h==='sw'){
+      l=dragState.l+(cx-dragState.sx);
+      w=Math.max(20,dragState.w-(cx-dragState.sx));
+      hh=Math.max(10,dragState.h+(cy-dragState.sy));
+    }else if(h==='ne'){
+      t=dragState.t+(cy-dragState.sy);
+      hh=Math.max(10,dragState.h-(cy-dragState.sy));
+      w=Math.max(20,dragState.w+(cx-dragState.sx));
+    }else if(h==='nw'){
+      l=dragState.l+(cx-dragState.sx);
+      t=dragState.t+(cy-dragState.sy);
+      w=Math.max(20,dragState.w-(cx-dragState.sx));
+      hh=Math.max(10,dragState.h-(cy-dragState.sy));
+    }
+    if(l<0){w+=l;l=0}if(t<0){hh+=t;t=0}
+    if(l+w>overlayUI.offsetWidth)w=overlayUI.offsetWidth-l;
+    if(t+hh>overlayUI.offsetHeight)hh=overlayUI.offsetHeight-t;
+    roi.style.left=l+'px';roi.style.top=t+'px';roi.style.width=w+'px';roi.style.height=hh+'px';
+  }
+  positionHandles();
+});
+
+overlayUI.addEventListener('pointerup',ev=>{dragState=null;try{overlayUI.releasePointerCapture(ev.pointerId)}catch(e){}});
+window.addEventListener('resize',positionHandles);
+
+document.getElementById('btn-start').addEventListener('click',async()=>{
+  const left=parseFloat(roi.style.left),top=parseFloat(roi.style.top),w=parseFloat(roi.style.width),h=parseFloat(roi.style.height);
+  const dispW=overlayUI.offsetWidth,dispH=overlayUI.offsetHeight;
+  const scaleX=FRAME_W/dispW,scaleY=FRAME_H/dispH;
+  const x1=Math.round(left*scaleX),y1=Math.round(top*scaleY),x2=Math.round((left+w)*scaleX),y2=Math.round((top+h)*scaleY);
+  try{
+    const r=await fetch('/set_roi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x1,y1,x2,y2})});
+    const j=await r.json();
+    if(j.success)document.getElementById('roi-text').textContent=`[${j.roi.join(',')}]`;
+    await fetch('/start_video',{method:'POST'});
+    initWebSocket();
+    document.getElementById('video-img').src='/video?'+Date.now();
+  }catch(e){alert('Lỗi');console.error(e)}
+});
+
+let ws=null;
+function initWebSocket(){
+  if(ws&&ws.readyState===WebSocket.OPEN)return;
+  const proto=(location.protocol==='https:')?'wss://':'ws://';
+  ws=new WebSocket(proto+location.host+'/ws');
+  ws.onmessage=evt=>{
+    try{
+      const obj=JSON.parse(evt.data);
+      renderVideoDetection(obj);
+      loadRegisteredCars();
+    }catch(e){console.warn('ws parse',e)}
+  };
+  ws.onclose=()=>{console.log('WS closed');ws=null};
+}
+
+function renderVideoDetection(obj){
+  const div=document.createElement('div');
+  div.className='video-det-item';
+  div.onclick=()=>openModal({text:obj.text,crop_b64:obj.crop_b64,timestamp:obj.timestamp,payment:obj.payment});
+  
+  const plate=document.createElement('div');
+  plate.className='video-det-plate';
+  plate.textContent=obj.text;
+  div.appendChild(plate);
+  
+  const time=document.createElement('div');
+  time.className='video-det-time';
+  time.textContent='🕐 '+obj.timestamp;
+  div.appendChild(time);
+  
+  const track=document.createElement('div');
+  track.className='video-det-track';
+  track.textContent='Track ID: '+obj.track_id;
+  div.appendChild(track);
+  
+  const pay=obj.payment||{};
+  const status=document.createElement('div');
+  status.className='video-det-status';
+  if(pay.status==='charged'){
+    status.innerHTML='✓ Trừ '+( pay.deducted?.toLocaleString?.() || 20000)+' VNĐ';
+    status.style.color='#155724';
+  }else if(pay.status==='no_balance'){
+    status.innerHTML='⚠ Hết tiền';
+    status.style.color='#721c24';
+  }else if(pay.status==='unregistered'){
+    status.innerHTML='⚠ Chưa đăng ký';
+    status.style.color='#721c24';
+  }
+  div.appendChild(status);
+  
+  document.getElementById('videoResults').prepend(div);
+}
+
+document.getElementById('video-img').addEventListener('load',()=>{
+  document.getElementById('overlay-ui').style.width=document.getElementById('video-img').clientWidth+'px';
+  document.getElementById('overlay-ui').style.height=document.getElementById('video-img').clientHeight+'px';
+  positionHandles();
+});
+</script>
+</body>
+</html>
