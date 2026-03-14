@@ -63,6 +63,7 @@ Streaming
 
 # 📂 Project Structure
 
+```
 AI-License-Plate-Recognition-System/
 │
 ├── api/
@@ -94,6 +95,7 @@ AI-License-Plate-Recognition-System/
 ├── main.py                      # FastAPI application entrypoint
 │
 └── .gitignore
+```
 
 ---
 
@@ -101,32 +103,33 @@ AI-License-Plate-Recognition-System/
 
 ### Detect plate from image
 
-
+```http
 POST /process_image
-
+```
 
 ### Upload video
 
-
+```http
 POST /upload_video
-
+```
 
 ### Start video detection
 
-
+```http
 POST /start_video
-
+```
 
 ### Register vehicle
 
-
+```http
 POST /register_car
-
+```
 
 ### Delete vehicle
 
-
+```http
 DELETE /delete_car
+```
 
 
 ---
